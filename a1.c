@@ -238,7 +238,7 @@ void bglist(bg_pro* head, int num_bgs){
     bg_pro* cur = head;
     int i=1;
     while(cur != NULL && i<=num_bgs){
-       printf("%d: %s %d\n", cur->pid, cur->command, i); 
+       printf("%d: %s\n", cur->pid, cur->command); 
        i++;
     }
     printf("Total Background jobs: %d\n", num_bgs);
@@ -300,6 +300,38 @@ void run_shell(){
             part1(args);
             
         }
+        
+        //check if bg process has terminated
+        if (num_bgs > 0){
+            pid_t ter = waitpid(0, NULL, WNOHANG);
+            while (ter > 0){
+                if(ter>0){ //some child has terminated
+                    if(head->pid == ter){
+                        printf("%d: %s has terminated.\n", head->pid, head->command);
+                        bg_pro* temp = head; //remove terminated process from list
+                        head = head->next;
+                        free(temp); //to free after a process has been removed
+                    } else {
+                        bg_pro* cur = head;
+
+                        //find terminated process
+                        while(cur->next->pid != ter){
+                            cur = cur->next;
+                        }
+                        printf("%d: %s has terminated.\n", cur->next->pid, cur->next->command);
+                        
+                        //remove terminated process from list
+                        bg_pro* temp = cur->next;
+                        cur->next = cur->next->next;
+                        free(temp);
+
+                        
+                    }
+                }
+                //update ter
+                ter = waitpid(0, NULL, WNOHANG);
+            }
+        }
     }
     free(cwd);
     //free(host);
@@ -310,7 +342,7 @@ void run_shell(){
     
 }
 
-//remember to free cwd and host since malloc was used!
+//remember to free!
 int main(){
     run_shell();
     
