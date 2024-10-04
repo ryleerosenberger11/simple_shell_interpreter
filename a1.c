@@ -47,11 +47,11 @@ char* get_hn(){
         if (h == 0){
             return host;
         }
-    } else {
         free(host);
-        exit(1); //malloc error or hostname error
+
     }
-    return NULL;
+    exit(1); //malloc error or hostname error
+
 }
 
 void tokenize_args(char usr_input[], char* args[]){
@@ -64,17 +64,16 @@ void tokenize_args(char usr_input[], char* args[]){
     while (token != NULL && num_tokens < max_args){
         args[num_tokens] = token;
         num_tokens++;
-        token = strtok(NULL, " ");
+        token = strtok(NULL, " \n");
     }
 
     //mark end of args?
     if (num_tokens < max_args){
-        args[num_tokens] = NULL;
+        args[num_tokens] = '\0';
     }
 }
 
-/*leftshift, array_to_str, create_bgpro, and append are
-part3 helpers*/
+/*leftshift, array_to_str, create_bgpro, and append are part3 helpers*/
 void leftshift(char *arr[]){
     int i = 0;
     
@@ -115,7 +114,7 @@ bg_pro* create_bg_pro(pid_t pid, char* args[]){ //*args or args[]?
     char command_str[1024];
     array_to_str(args, command_str);
     new_bg->pid = pid;
-    new_bg->command = command_str;
+    new_bg->command = strdup(command_str); //to dynamically allocate
     new_bg->next = NULL;
 
     return new_bg;
@@ -137,6 +136,7 @@ void append(bg_pro** head, bg_pro* new_bg, int* num_bgs){
         //add at end
         cur->next = new_bg;
     }
+    
     (*num_bgs)++;
     return;
 }
@@ -159,9 +159,16 @@ void part1(char *args[]){
 
         //following line is executed if execvp fails
         perror("execvp failed");
+        exit(1);
     } else {
         //parent process - wait for child to finish so that child does not enter 'zombie state'
-        wait(NULL);
+        // wait for this specific child process to finish
+        pid_t w_pid = waitpid(pid, NULL, 0);
+        
+        if (w_pid == -1) {
+            perror("waitpid");
+            exit(1);
+        }
 
     }
 
@@ -190,7 +197,7 @@ void part2(char *args[]){
     return;
 }
 
-void part3(char *args[], int num_bgs, bg_pro* head){
+void part3(char *args[], int* num_bgs, bg_pro** head){
     leftshift(args);
 
     pid_t pid;
@@ -202,18 +209,50 @@ void part3(char *args[], int num_bgs, bg_pro* head){
         exit(1);
     
     } else if (pid==0){ 
-        execvp(args[0], args);
+        //child process
 
+        //redirect output so it doesn't display on terminal
+        if (freopen("/dev/null", "w", stdout) == NULL) {
+            perror("freopen stdout failed");
+            exit(1);
+        }
+
+        if (freopen("/dev/null", "w", stderr) == NULL) {
+            perror("freopen stderr failed");
+            exit(1);
+        }
+       
+        execvp(args[0], args);
+        
         //following line is executed if execvp fails
         perror("execvp failed");
+        exit(1);
     } else {
         //create bg in list
         bg_pro *new_bg = create_bg_pro(pid, args);
-        append(&head, new_bg, &num_bgs);
+        append(head, new_bg, num_bgs);
     }  
     
 }
+void bglist(bg_pro* head, int num_bgs){
+    bg_pro* cur = head;
+    int i=1;
+    while(cur != NULL && i<=num_bgs){
+       printf("%d: %s %d\n", cur->pid, cur->command, i); 
+       i++;
+    }
+    printf("Total Background jobs: %d\n", num_bgs);
+}
 
+void free_bg_list(bg_pro* head) {
+    bg_pro *cur = head;
+    while (cur != NULL) {
+        bg_pro *next = cur->next;
+        free(cur->command);  // free command sine it was dynamically allocated with strdup
+        free(cur);           // free the struct itself
+        cur = next;
+    }
+}
 
 void run_shell(){
     char usr_input[std_sz]; //declare buffer for storing user input
@@ -238,24 +277,34 @@ void run_shell(){
         usr_input[strcspn(usr_input, "\n")] = '\0';
 
         //check for "exit" command
-        if(strcmp(ex, usr_input)==0){
+        if(strcmp(ex, usr_input) == 0){
             break;
         }
         //tokenize the input
         tokenize_args(usr_input, args);
         
-        if (strcmp(args[0], "cd")==0){
+        //cd
+        if (strcmp(args[0], "cd") == 0){
             part2(args);
-        } else if (strcmp(args[0], "bg")==0){
-            part3(args, num_bgs, head);
-        }
-        else {
+        
+        //bg
+        } else if (strcmp(args[0], "bg") == 0){
+            part3(args, &num_bgs, &head);
+        
+        //bglist
+        } else if (strcmp(args[0], "bglist") == 0){
+            bglist(head, num_bgs);
+
+        //regular command
+        }else {
             part1(args);
             
         }
     }
     free(cwd);
-    free(host);
+    //free(host);
+    free_bg_list(head);
+    
     return;
     
     
