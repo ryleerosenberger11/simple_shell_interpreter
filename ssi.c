@@ -233,12 +233,12 @@ void part3(char *args[], int* num_bgs, bg_pro** head){
         //following line is executed if execvp fails
         perror("execvp failed");
         exit(1);
+        
     } else {
         //create bg in list
         bg_pro *new_bg = create_bg_pro(pid, args);
         append(head, new_bg, num_bgs);
-    }  
-    
+    }      
 }
 void bglist(bg_pro* head, int num_bgs){
     bg_pro* cur = head;
@@ -254,7 +254,7 @@ void free_bg_list(bg_pro* head) {
     bg_pro *cur = head;
     while (cur != NULL) {
         bg_pro *next = cur->next;
-        free(cur->command);  // free command sine it was dynamically allocated with strdup
+        free(cur->command);  // free command since it was dynamically allocated with strdup
         free(cur);           // free the struct itself
         cur = next;
     }
