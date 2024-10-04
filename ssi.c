@@ -114,7 +114,13 @@ bg_pro* create_bg_pro(pid_t pid, char* args[]){ //*args or args[]?
     char command_str[1024];
     array_to_str(args, command_str);
     new_bg->pid = pid;
-    new_bg->command = strdup(command_str); //to dynamically allocate
+    new_bg->command = strdup(command_str);
+
+    //check if strdup failed
+    if (!new_bg->command) {
+        free(new_bg);
+        exit(1);
+    }
     new_bg->next = NULL;
 
     return new_bg;
@@ -254,6 +260,12 @@ void free_bg_list(bg_pro* head) {
     }
 }
 
+void sigintHandler(int sig_num) { 
+    //reset
+    signal(SIGINT, sigintHandler);
+    return;
+}
+
 void run_shell(){
     char usr_input[std_sz]; //declare buffer for storing user input
     char *args[max_args]; //to store args from input
@@ -272,6 +284,11 @@ void run_shell(){
         cwd = get_directory();
         printf("%s@%s: %s > ", usr, host, cwd);
         fgets(usr_input, sizeof(usr_input), stdin);
+
+        while(strcmp(usr_input, "\n")==0){
+            printf("%s@%s: %s > ", usr, host, cwd);
+            fgets(usr_input, sizeof(usr_input), stdin);
+        }
 
         //remove newline from user input
         usr_input[strcspn(usr_input, "\n")] = '\0';
@@ -327,14 +344,16 @@ void run_shell(){
 
                         
                     }
+                    num_bgs--;
                 }
                 //update ter
                 ter = waitpid(0, NULL, WNOHANG);
             }
         }
+        free(cwd);
     }
-    free(cwd);
-    //free(host);
+    //free(cwd);
+    free(host);
     free_bg_list(head);
     
     return;
@@ -344,6 +363,8 @@ void run_shell(){
 
 //remember to free!
 int main(){
+    //set handler for ctrl C
+    signal(SIGINT, sigintHandler);
     run_shell();
     
     return 0;
