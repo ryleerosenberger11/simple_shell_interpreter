@@ -78,9 +78,8 @@ void leftshift(char *arr[]){
     int i = 0;
     
     while(arr[i+1]!=NULL){
-        //printf("iteration %d:\n%s\n", i, arr[i]);
+
         arr[i] = arr[i+1];
-        //printf("%s\n", arr[i]);
         i++;
     }
     arr[i] = '\0';
@@ -101,10 +100,9 @@ void array_to_str(char* arr[], char* buffer){
     //now remove extra space and add null terminator
     len = strlen(buffer);
     buffer[len-1] = '\0';
-    //printf("args: %s", buffer);
 }
 
-bg_pro* create_bg_pro(pid_t pid, char* args[]){ //*args or args[]?
+bg_pro* create_bg_pro(pid_t pid, char* args[]){ 
     bg_pro *new_bg = (bg_pro *)malloc(sizeof(bg_pro));
     
     if(!new_bg){
@@ -285,6 +283,7 @@ void run_shell(){
         printf("%s@%s: %s > ", usr, host, cwd);
         fgets(usr_input, sizeof(usr_input), stdin);
 
+        //check if input is empty. if so, prompt again
         while(strcmp(usr_input, "\n")==0){
             printf("%s@%s: %s > ", usr, host, cwd);
             fgets(usr_input, sizeof(usr_input), stdin);
