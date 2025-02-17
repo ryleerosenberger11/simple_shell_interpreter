@@ -1,7 +1,6 @@
 Rylee Rosenberger
-v01000941
 
-CSC360 p1 - Simple Shell Interpreter
+Simple Shell Interpreter
 
 Foreground execution:
 usr@host: cwd printed to terminal.
@@ -17,7 +16,6 @@ cd takes only one argument and ignores all others.
 
 Background execution:
 bg process output is redirected as to not display it on terminal.
-**note - bg cat foo.txt -> foo.txt does not exist. However, since the output for bg is redirected, the shell will not output "No such file or directory," but it will signify the process has terminated once another command has been executed.
 bglist lists the current bg processes as follows:
 pid: process
 Total Background jobs: num_bg_processes
